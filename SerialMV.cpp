@@ -1,7 +1,8 @@
 #include <stdio.h>
 void DummyDataInitialization(double* pMatrix, double* pVector, int Size);
 void ProcessInitialization(double*& pMatrix, double*& pVector, double*& pResult, int& Size);
-void ProcessTermination(double* pMatrix, double* pVector, double* pResult);
+void PrintMatrix(double* pMatrix, int RowCount, int ColCount);
+void PrintVector(double* pVector, int Size);
 
 int main() {
     
@@ -12,9 +13,12 @@ int main() {
 
     printf("Serial matrix-vector multiplication program\n");
     ProcessInitialization(pMatrix, pVector, pResult,Size);
-    
-    ProcessTermination(pMatrix, pVector, pResult);
-    
+
+    printf ("Initial Matrix: \n");
+    PrintMatrix (pMatrix, Size, Size);
+    printf ("Initial Vector: \n");
+    PrintVector (pVector, Size);
+      
     printf("Press Enter to finish...");
     getchar();
     getchar();
@@ -45,8 +49,15 @@ void DummyDataInitialization(double* pMatrix, double* pVector, int Size) {
     }
 }
 
-void ProcessTermination(double* pMatrix, double* pVector, double* pResult) {
-    delete[] pMatrix;
-    delete[] pVector;
-    delete[] pResult;
+void PrintMatrix(double* pMatrix, int RowCount, int ColCount) {
+    for (int i = 0; i < RowCount; i++) {
+        for (int j = 0; j < ColCount; j++)
+            printf("%7.4f ", pMatrix[i * RowCount + j]);
+        printf("\n");
+    }
+}
+
+void PrintVector(double* pVector, int Size) {
+    for (int i = 0; i < Size; i++)
+        printf("%7.4f ", pVector[i]);
 }
