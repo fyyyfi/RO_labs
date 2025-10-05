@@ -267,10 +267,10 @@ int main(int argc, char* argv[]) {
     // Memory allocation and data initialization
     ProcessInitialization(pMatrix, pVector, pResult, pProcRows, pProcResult, Size, RowNum);
 
-    Start = MPI_Wtime();
-
     // Distributing the initial data between the processes
     DataDistribution(pMatrix, pProcRows, pVector, Size, RowNum);
+    
+    Start = MPI_Wtime();
 
     // Parallel matrix-vector multiplication
     ParallelResultCalculation(pProcRows, pVector, pProcResult, Size, RowNum);
