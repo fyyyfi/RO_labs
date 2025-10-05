@@ -18,7 +18,7 @@
 
 ## Parallel algorithm results
 
-| Matrix size | Serial algorithm | 2 processors          | 4 processors          |
+| Matrix size | Serial algorithm | \multicolumn{2}{c|}{2 processors} | \multicolumn{2}{c|}{4 processors} |
 |-------------|------------------|------------|----------|------------|----------|
 |             | Time             | Time       | Speed up | Time       | Speed up |
 | 10          | 0.000002         | 0.000030   | 0.07     | 0.000071   | 0.03     |
