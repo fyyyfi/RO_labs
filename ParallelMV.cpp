@@ -68,69 +68,72 @@ int &Size, int &RowNum) {
     }
 }
 
+// Function for distribution of the initial data between the processes
 void DataDistribution(double* pMatrix, double* pProcRows, double* pVector,
-int Size, int RowNum) {
-    int *pSendNum; // Number of elements sent to the process
-    int *pSendInd; // Index of the first data element sent to the process
-    int RestRows=Size; // Number of rows, that haven’t been distributed yet
+                      int Size, int RowNum) {
+    int *pSendNum; // Кількість елементів, що надсилаються кожному процесу
+    int *pSendInd; // Індекс (зсув) першого елемента для кожного процесу
+    int RestRows = Size; // Кількість рядків, які залишилося розподілити
 
+    // Розсилаємо вектор b усім процесам
     MPI_Bcast(pVector, Size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    // Alloc memory for temporary objects
-    pSendInd = new int [ProcNum];
-    pSendNum = new int [ProcNum];
+    // Виділяємо пам'ять для допоміжних масивів
+    pSendInd = new int[ProcNum];
+    pSendNum = new int[ProcNum];
 
-    // Define the disposition of the matrix rows for current process
-    RowNum = (Size/ProcNum);
-    pSendNum[0] = RowNum*Size;
-    pSendInd[0] = 0;
+    // Розраховуємо, скільки рядків і з яким зсувом отримає КОЖЕН процес
+    int CurrentRowNum = 0;
+    pSendInd[0] = 0; // Перший процес завжди починається з нульового індексу
 
-    for (int i=1; i<ProcNum; i++) {
-        RestRows -= RowNum;
-        RowNum = RestRows/(ProcNum-i);
-        pSendNum[i] = RowNum*Size;
-        pSendInd[i] = pSendInd[i-1]+pSendNum[i-1];
+    for (int i = 0; i < ProcNum; i++) {
+        CurrentRowNum = RestRows / (ProcNum - i);
+        pSendNum[i] = CurrentRowNum * Size; // Кількість елементів = кількість рядків * ширину матриці
+        RestRows -= CurrentRowNum;
+
+        if (i > 0) {
+            // Зсув наступного процесу = зсув попереднього + кількість елементів у попереднього
+            pSendInd[i] = pSendInd[i - 1] + pSendNum[i - 1];
+        }
     }
 
-    // Scatter the rows
-    MPI_Scatterv(pMatrix , pSendNum, pSendInd, MPI_DOUBLE, pProcRows,
-    pSendNum[ProcRank], MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    // Роздаємо частини матриці
+    MPI_Scatterv(pMatrix, pSendNum, pSendInd, MPI_DOUBLE, pProcRows,
+                 pSendNum[ProcRank], MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    // Free the memory
-    delete [] pSendNum;
-    delete [] pSendInd;
+    // Звільняємо пам'ять
+    delete[] pSendNum;
+    delete[] pSendInd;
 }
 
 // Function for result vector replication
 void ResultReplication(double* pProcResult, double* pResult, int Size,
-int RowNum) {
-    int *pReceiveNum; // Number of elements, that current process sends
-    int *pReceiveInd; // Index of the first element from current process
-    // in result vector
-    int RestRows=Size; // Number of rows, that haven’t been distributed yet
-    int i; // Loop variable
+                       int RowNum) {
+    int *pReceiveNum; // Кількість елементів, які отримуємо від кожного процесу
+    int *pReceiveInd; // Зсуви для кожного блоку результатів
+    int RestRows = Size;
 
-    //Alloc memory for temporary objects
-    pReceiveNum = new int [ProcNum];
-    pReceiveInd = new int [ProcNum];
+    pReceiveNum = new int[ProcNum];
+    pReceiveInd = new int[ProcNum];
 
-    //Define the disposition of the result vector block of current processor
+    // Коректний розрахунок частин результату від кожного процесу
+    int CurrentRowNum = 0;
     pReceiveInd[0] = 0;
-    pReceiveNum[0] = Size/ProcNum;
-
-    for (i=1; i<ProcNum; i++) {
-        RestRows -= pReceiveNum[i-1];
-        pReceiveNum[i] = RestRows/(ProcNum-i);
-        pReceiveInd[i] = pReceiveInd[i-1]+pReceiveNum[i-1];
+    for (int i = 0; i < ProcNum; i++) {
+        CurrentRowNum = RestRows / (ProcNum - i);
+        pReceiveNum[i] = CurrentRowNum; // Тут просто кількість рядків
+        RestRows -= CurrentRowNum;
+        if (i > 0) {
+            pReceiveInd[i] = pReceiveInd[i - 1] + pReceiveNum[i - 1];
+        }
     }
 
-    //Gather the whole result vector on every processor
+    // Збираємо частини результату від усіх процесів
     MPI_Allgatherv(pProcResult, pReceiveNum[ProcRank], MPI_DOUBLE, pResult,
-    pReceiveNum, pReceiveInd, MPI_DOUBLE, MPI_COMM_WORLD);
+                   pReceiveNum, pReceiveInd, MPI_DOUBLE, MPI_COMM_WORLD);
 
-    //Free the memory
-    delete [] pReceiveNum;
-    delete [] pReceiveInd;
+    delete[] pReceiveNum;
+    delete[] pReceiveInd;
 }
 
 // Function for sequential matrix-vector multiplication
@@ -241,4 +244,50 @@ double* pProcRows, double* pProcResult) {
     delete [] pResult;
     delete [] pProcRows;
     delete [] pProcResult;
+}
+
+int main(int argc, char* argv[]) {
+    double* pMatrix; // First argument - initial matrix
+    double* pVector; // Second argument - initial vector
+    double* pResult; // Result vector for matrix-vector multiplication
+    int Size; // Sizes of initial matrix and vector
+    double* pProcRows; // Stripe of the matrix on the current process
+    double* pProcResult; // Block of the result vector on the current process
+    int RowNum; // Number of rows in the matrix stripe
+    double Start, Finish, Duration;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
+    MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
+
+    if (ProcRank == 0) {
+        printf ("Parallel matrix-vector multiplication program\n");
+    }
+    
+    // Memory allocation and data initialization
+    ProcessInitialization(pMatrix, pVector, pResult, pProcRows, pProcResult, Size, RowNum);
+
+    Start = MPI_Wtime();
+
+    // Distributing the initial data between the processes
+    DataDistribution(pMatrix, pProcRows, pVector, Size, RowNum);
+
+    // Parallel matrix-vector multiplication
+    ParallelResultCalculation(pProcRows, pVector, pProcResult, Size, RowNum);
+
+    // Result replication
+    ResultReplication(pProcResult, pResult, Size, RowNum);
+
+    Finish = MPI_Wtime();
+    Duration = Finish-Start;
+
+    TestResult(pMatrix, pVector, pResult, Size);
+    if (ProcRank == 0) {
+        printf("\nTime of execution = %f\n", Duration);
+    }
+
+    // Process termination
+    ProcessTermination(pMatrix, pVector, pResult, pProcRows, pProcResult);
+    
+    MPI_Finalize();
 }
