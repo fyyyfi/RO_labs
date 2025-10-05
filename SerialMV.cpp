@@ -23,6 +23,7 @@ int main() {
     printf("Serial matrix-vector multiplication program\n");
     ProcessInitialization(pMatrix, pVector, pResult,Size);
 
+    /*
     printf ("Initial Matrix: \n");
     PrintMatrix (pMatrix, Size, Size);
     /*printf ("Initial Vector: \n");
