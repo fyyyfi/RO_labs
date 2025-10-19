@@ -29,7 +29,7 @@ void ProcessInitialization (double* &pAMatrix, double* &pBMatrix, double* &pCMat
     do {
         printf("\nEnter the size of matrices: ");
         scanf("%d", &Size);
-        printf("\nChosen matrices' size = %d\n", Size);
+        //printf("\nChosen matrices' size = %d\n", Size);
         
         if (Size <= 0)
             printf("\nSize of objects must be greater than 0!\n");
@@ -49,24 +49,8 @@ void ProcessInitialization (double* &pAMatrix, double* &pBMatrix, double* &pCMat
     }
 }
 
-// Function for memory allocation and initialization of matrix elements
-void ProcessInitializationTest (double* &pAMatrix, double* &pBMatrix, double* &pCMatrix, int &Size) {
-    printf("\nChosen matrices' size = %d\n", Size);
-    
-    // Memory allocation
-    pAMatrix = new double [Size*Size];
-    pBMatrix = new double [Size*Size];
-    pCMatrix = new double [Size*Size];
-    
-    // Initialization of matrix elements
-    DummyDataInitialization(pAMatrix, pBMatrix, Size);
-    
-    for (int i=0; i<Size*Size; i++) {
-        pCMatrix[i] = 0;
-    }
-}
 
-// Function for formatted matrix output
+/* Function for formatted matrix output
 void PrintMatrix (double* pMatrix, int RowCount, int ColCount) {
     int i, j; // Loop variables
     
@@ -76,7 +60,7 @@ void PrintMatrix (double* pMatrix, int RowCount, int ColCount) {
         
         printf("\n");
     }
-}
+}*/
 
 // Function for matrix multiplication
 void SerialResultCalculation(double* pAMatrix, double* pBMatrix,   double* pCMatrix, int Size) {
@@ -108,21 +92,12 @@ int main() {
     // Memory allocation and initialization of matrix elements
     ProcessInitialization(pAMatrix, pBMatrix, pCMatrix, Size);
 
-    // Matrix output
-    printf("Initial A Matrix \n");
-    PrintMatrix(pAMatrix, Size, Size);
-    printf("Initial B Matrix \n");
-    PrintMatrix(pBMatrix, Size, Size);
     
     // Matrix multiplication
     start = clock();
     SerialResultCalculation(pAMatrix, pBMatrix, pCMatrix, Size);
     finish = clock();
     duration = (finish - start) / double(CLOCKS_PER_SEC);
-
-    // Printing the result matrix
-    printf("\nResult Matrix:\n");
-    PrintMatrix(pCMatrix, Size, Size);
 
     // Printing the time spent by matrix multiplication
     printf("\nTime of execution: %f\n", duration);
