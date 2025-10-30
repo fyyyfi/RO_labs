@@ -68,8 +68,8 @@ double* pCblock, int Size) {
 // and communicators for each row and each column of the grid
 void CreateGridCommunicators() {
     int DimSize[2]; // Number of processes in each dimension of the grid
-    int Periodic[2]; // =1, if the grid dimension should be periodic
-    int Subdims[2]; // =1, if the grid dimension should be fixed
+    int Periodic[2]; 
+    int Subdims[2]; 
 
     GridSize = sqrt((double)ProcNum);
     DimSize[0] = GridSize;
